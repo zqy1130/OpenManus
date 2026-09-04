@@ -5,6 +5,9 @@ logs/
 # Data
 data/
 
+# Research outputs
+outputs/
+
 # Workspace
 workspace/
 
