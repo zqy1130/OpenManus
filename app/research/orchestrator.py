@@ -2,6 +2,7 @@
 
 import json
 import re
+import time
 from typing import Any, Dict, List, Optional
 
 from app.research.llm import call_llm, extract_json
@@ -61,6 +62,7 @@ class ResearchOrchestrator:
     async def run(self) -> Dict[str, Any]:
         """Execute the pipeline and return a summary dict."""
         self.task.status = TaskStatus.RUNNING
+        started = time.perf_counter()
         try:
             plan = await self._plan()
             evidence = await self._retrieve(plan)
@@ -71,6 +73,7 @@ class ResearchOrchestrator:
             extra = {
                 "sub_question_count": len(plan),
                 "evidence_count": len(evidence),
+                "duration_s": round(time.perf_counter() - started, 1),
                 **citation_stats,
             }
             self.trace.write_manifest("completed", extra=extra)
@@ -93,6 +96,7 @@ class ResearchOrchestrator:
     async def _plan(self) -> List[Dict[str, str]]:
         span = self.trace.start_span("planning")
         try:
+            print("[planning] 生成研究计划...", flush=True)
             content, usage = await call_llm(
                 [
                     {"role": "system", "content": PLAN_SYSTEM_PROMPT},
@@ -117,6 +121,9 @@ class ResearchOrchestrator:
                     }
                 ]
             self.trace.add_event(EventType.PLANNING, payload={"plan": plan})
+            print(f"[planning] 拆分为 {len(plan)} 个子问题：", flush=True)
+            for i, item in enumerate(plan, 1):
+                print(f"  {i}. {item['goal']}", flush=True)
             return plan
         finally:
             self.trace.end_span(span)
@@ -142,17 +149,24 @@ class ResearchOrchestrator:
         for i, item in enumerate(plan, 1):
             span = self.trace.start_span(f"step-{i}")
             try:
+                print(
+                    f"[step {i}/{len(plan)}] 检索: \"{item['search_query']}\"",
+                    flush=True,
+                )
                 found = await self.retriever.search(
                     item["search_query"], top_k=self.top_k, fetch_content=True
                 )
+                print(f"        -> {len(found)} 条证据", flush=True)
                 evidence.extend(found)
             finally:
                 self.trace.end_span(span)
+        print(f"[retrieval] 去重后共 {len(dedup_evidence(evidence))} 条证据", flush=True)
         return dedup_evidence(evidence)
 
     async def _synthesize(self, evidence: List[Evidence]) -> str:
         span = self.trace.start_span("synthesis")
         try:
+            print(f"[synthesis] 基于 {len(evidence)} 条证据生成报告...", flush=True)
             content, usage = await call_llm(
                 [
                     {"role": "system", "content": SYNTHESIS_SYSTEM_PROMPT},

@@ -20,11 +20,11 @@ async def run_research(question: str, top_k: int, max_sub_questions: int) -> Non
             max_sub_questions=max_sub_questions,
         )
         summary = await orchestrator.run()
-    print(f"Report: outputs/research/{task.task_id}/report.md")
+    print(f"完成！报告: outputs/research/{task.task_id}/report.md")
     print(
-        f"Evidence: {summary['evidence_count']} | "
-        f"Sub-questions: {summary['sub_question_count']} | "
-        f"Citation coverage: {summary['citation_coverage']}"
+        f"耗时 {summary['duration_s']}s | 证据 {summary['evidence_count']} 条 | "
+        f"子问题 {summary['sub_question_count']} 个 | "
+        f"引用覆盖率 {summary['citation_coverage']}"
     )
 
 
