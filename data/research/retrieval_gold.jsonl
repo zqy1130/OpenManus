@@ -1,0 +1,20 @@
+{"query_id": "q01", "query": "who proposed the transformer architecture", "relevant_doc_ids": ["transformer_machine_learning_model", "attention_is_all_you_need"]}
+{"query_id": "q02", "query": "how does the Hopfield network store memories", "relevant_doc_ids": ["hopfield_network", "霍普菲尔德神经网络"]}
+{"query_id": "q03", "query": "what is a Boltzmann machine", "relevant_doc_ids": ["boltzmann_machine", "hopfield_network"]}
+{"query_id": "q04", "query": "Geoffrey Hinton contributions to deep learning", "relevant_doc_ids": ["geoffrey_hinton", "杰弗里_辛顿", "boltzmann_machine"]}
+{"query_id": "q05", "query": "do large language models have emergent abilities", "relevant_doc_ids": ["emergent_abilities_of_large_language_models", "涌现"]}
+{"query_id": "q06", "query": "what is reinforcement learning", "relevant_doc_ids": ["reinforcement_learning"]}
+{"query_id": "q07", "query": "GPT-4 capabilities and training", "relevant_doc_ids": ["gpt_4"]}
+{"query_id": "q08", "query": "Google Gemini multimodal model", "relevant_doc_ids": ["gemini_language_model"]}
+{"query_id": "q09", "query": "AlphaFold protein structure prediction", "relevant_doc_ids": ["alphafold"]}
+{"query_id": "q10", "query": "Turing Award recipients history", "relevant_doc_ids": ["turing_award", "andrew_barto"]}
+{"query_id": "q11", "query": "Andrew Barto reinforcement learning research", "relevant_doc_ids": ["andrew_barto", "reinforcement_learning", "richard_s_sutton"]}
+{"query_id": "q12", "query": "Richard Sutton temporal difference learning", "relevant_doc_ids": ["richard_s_sutton", "reinforcement_learning"]}
+{"query_id": "q13", "query": "DeepSeek open source large language model", "relevant_doc_ids": ["deepseek"]}
+{"query_id": "q14", "query": "Meta LLaMA model family", "relevant_doc_ids": ["llama"]}
+{"query_id": "q15", "query": "Cohere company founders", "relevant_doc_ids": ["cohere", "attention_is_all_you_need"]}
+{"query_id": "q16", "query": "Character.ai AI chatbot company", "relevant_doc_ids": ["character_ai"]}
+{"query_id": "q17", "query": "attention mechanism in neural networks", "relevant_doc_ids": ["attention_is_all_you_need", "transformer_machine_learning_model"]}
+{"query_id": "q18", "query": "霍普菲尔德网络与诺贝尔物理学奖", "relevant_doc_ids": ["霍普菲尔德神经网络", "hopfield_network", "geoffrey_hinton"]}
+{"query_id": "q19", "query": "涌现现象 复杂系统", "relevant_doc_ids": ["涌现", "emergent_abilities_of_large_language_models"]}
+{"query_id": "q20", "query": "杰弗里·辛顿 人工智能 贡献", "relevant_doc_ids": ["杰弗里_辛顿", "geoffrey_hinton"]}

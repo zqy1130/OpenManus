@@ -1,0 +1,5 @@
+{"id": "baseline-01", "category": "fact_lookup", "question": "2024年图灵奖授予了谁？他们的获奖理由是什么？"}
+{"id": "baseline-02", "category": "comparison", "question": "对比 OpenAI GPT-4o 与 Google Gemini 1.5 Pro 在多模态能力上的主要差异"}
+{"id": "baseline-03", "category": "time_constraint", "question": "2024年7月至12月期间发布的重要开源大语言模型有哪些？各自有什么特点？"}
+{"id": "baseline-04", "category": "multi_hop", "question": "《Attention Is All You Need》的八位作者后来分别创办了哪些 AI 公司？"}
+{"id": "baseline-05", "category": "conflicting_sources", "question": "大语言模型是否真的具备\"涌现能力\"？支持方和反对方的论据分别是什么？"}

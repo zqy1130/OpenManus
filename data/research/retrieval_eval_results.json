@@ -1,0 +1,30 @@
+[
+  {
+    "config": "bm25",
+    "recall_at_k": 0.8,
+    "mrr": 0.975,
+    "unique_doc_rate": 0.36,
+    "avg_latency_ms": 16.6
+  },
+  {
+    "config": "vector",
+    "recall_at_k": 0.825,
+    "mrr": 0.975,
+    "unique_doc_rate": 0.34,
+    "avg_latency_ms": 249.9
+  },
+  {
+    "config": "hybrid",
+    "recall_at_k": 0.792,
+    "mrr": 1.0,
+    "unique_doc_rate": 0.31,
+    "avg_latency_ms": 260.5
+  },
+  {
+    "config": "hybrid+rerank",
+    "recall_at_k": 0.792,
+    "mrr": 0.975,
+    "unique_doc_rate": 0.31,
+    "avg_latency_ms": 18179.8
+  }
+]

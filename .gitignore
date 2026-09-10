@@ -3,7 +3,11 @@
 logs/
 
 # Data
-data/
+data/*
+!data/research/
+data/research/*
+!data/research/*.jsonl
+!data/research/*.json
 
 # Research outputs
 outputs/
