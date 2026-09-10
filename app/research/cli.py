@@ -7,9 +7,15 @@ from app.research.models import ResearchTask
 from app.research.orchestrator import ResearchOrchestrator
 from app.research.retriever import Retriever
 from app.research.trace import TraceWriter
+from app.research.verifier import Validator
 
 
-async def run_research(question: str, top_k: int, max_sub_questions: int) -> None:
+async def run_research(
+    question: str,
+    top_k: int,
+    max_sub_questions: int,
+    use_validator: bool = True,
+) -> None:
     task = ResearchTask(question=question)
     with TraceWriter(task.task_id) as trace:
         orchestrator = ResearchOrchestrator(
@@ -18,6 +24,7 @@ async def run_research(question: str, top_k: int, max_sub_questions: int) -> Non
             retriever=Retriever(trace=trace, top_k=top_k),
             top_k=top_k,
             max_sub_questions=max_sub_questions,
+            validator=Validator(trace=trace) if use_validator else None,
         )
         summary = await orchestrator.run()
     print(f"完成！报告: outputs/research/{task.task_id}/report.md")
@@ -35,8 +42,20 @@ def main() -> None:
     parser.add_argument(
         "--max-sub-questions", type=int, default=5, help="Max sub-questions"
     )
+    parser.add_argument(
+        "--no-validator",
+        action="store_true",
+        help="Disable step validation (for ablation runs)",
+    )
     args = parser.parse_args()
-    asyncio.run(run_research(args.question, args.top_k, args.max_sub_questions))
+    asyncio.run(
+        run_research(
+            args.question,
+            args.top_k,
+            args.max_sub_questions,
+            use_validator=not args.no_validator,
+        )
+    )
 
 
 if __name__ == "__main__":

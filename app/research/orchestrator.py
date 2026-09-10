@@ -52,12 +52,20 @@ class ResearchOrchestrator:
         retriever: Optional[Retriever] = None,
         top_k: int = 5,
         max_sub_questions: int = 5,
+        validator: Optional[Any] = None,
+        max_retries_per_step: Optional[int] = None,
     ):
         self.task = task
         self.trace = trace
         self.retriever = retriever or Retriever(trace=trace, top_k=top_k)
         self.top_k = top_k
         self.max_sub_questions = max_sub_questions
+        self.validator = validator
+        self.max_retries_per_step = (
+            max_retries_per_step
+            if max_retries_per_step is not None
+            else task.budget.max_retries_per_step
+        )
 
     async def run(self) -> Dict[str, Any]:
         """Execute the pipeline and return a summary dict."""
@@ -148,16 +156,48 @@ class ResearchOrchestrator:
         evidence: List[Evidence] = []
         for i, item in enumerate(plan, 1):
             span = self.trace.start_span(f"step-{i}")
+            step_evidence: List[Evidence] = []
+            query = item["search_query"]
+            step_metrics = {
+                "step_index": i,
+                "goal": item["goal"],
+                "queries_tried": [],
+                "retries_used": 0,
+                "step_complete": None,
+                "evidence_sufficiency": None,
+            }
             try:
-                print(
-                    f"[step {i}/{len(plan)}] 检索: \"{item['search_query']}\"",
-                    flush=True,
+                for attempt in range(1, self.max_retries_per_step + 1):
+                    step_metrics["queries_tried"].append(query)
+                    print(
+                        f"[step {i}/{len(plan)}] 检索: \"{query}\"",
+                        flush=True,
+                    )
+                    found = await self.retriever.search(
+                        query, top_k=self.top_k, fetch_content=True
+                    )
+                    print(f"        -> {len(found)} 条证据", flush=True)
+                    step_evidence.extend(found)
+                    if self.validator is None or attempt >= self.max_retries_per_step:
+                        break
+                    result = await self.validator.validate_step(
+                        item["goal"], step_evidence, self.task.question
+                    )
+                    step_metrics["evidence_sufficiency"] = result.evidence_sufficiency
+                    if result.step_complete:
+                        step_metrics["step_complete"] = True
+                        break
+                    if not result.refined_query:
+                        step_metrics["step_complete"] = False
+                        break
+                    step_metrics["retries_used"] += 1
+                    query = result.refined_query
+                    print(f"        [validate] 证据不足，补检索: \"{query}\"", flush=True)
+                self.trace.add_event(
+                    EventType.VERIFICATION,
+                    payload={**step_metrics, "status": "validated"},
                 )
-                found = await self.retriever.search(
-                    item["search_query"], top_k=self.top_k, fetch_content=True
-                )
-                print(f"        -> {len(found)} 条证据", flush=True)
-                evidence.extend(found)
+                evidence.extend(step_evidence)
             finally:
                 self.trace.end_span(span)
         print(f"[retrieval] 去重后共 {len(dedup_evidence(evidence))} 条证据", flush=True)

@@ -3,28 +3,28 @@
     "config": "bm25",
     "recall_at_k": 0.8,
     "mrr": 0.975,
-    "unique_doc_rate": 0.36,
-    "avg_latency_ms": 16.6
+    "unique_doc_rate": 0.43,
+    "avg_latency_ms": 30.4
   },
   {
     "config": "vector",
-    "recall_at_k": 0.825,
+    "recall_at_k": 0.867,
     "mrr": 0.975,
-    "unique_doc_rate": 0.34,
-    "avg_latency_ms": 249.9
+    "unique_doc_rate": 0.39,
+    "avg_latency_ms": 420.1
   },
   {
     "config": "hybrid",
-    "recall_at_k": 0.792,
+    "recall_at_k": 0.883,
     "mrr": 1.0,
-    "unique_doc_rate": 0.31,
-    "avg_latency_ms": 260.5
+    "unique_doc_rate": 0.48,
+    "avg_latency_ms": 398.4
   },
   {
     "config": "hybrid+rerank",
-    "recall_at_k": 0.792,
+    "recall_at_k": 0.883,
     "mrr": 0.975,
-    "unique_doc_rate": 0.31,
-    "avg_latency_ms": 18179.8
+    "unique_doc_rate": 0.48,
+    "avg_latency_ms": 13071.1
   }
 ]

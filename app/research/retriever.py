@@ -13,6 +13,29 @@ from app.tool.web_search import WebSearch
 RRF_K = 60
 
 
+def classify_error(exc: Exception) -> str:
+    """Classify a retrieval failure into a coarse error type.
+
+    Types follow the Phase 3 taxonomy: param_error / network_error /
+    rate_limit / empty_results / content_quality / unknown.
+    """
+    name = type(exc).__name__.lower()
+    if "rate" in name or "429" in str(exc):
+        return "rate_limit"
+    if "timeout" in name:
+        return "network_error"
+    if "connection" in name or "tls" in name or "ssl" in name:
+        return "network_error"
+    if "http" in name:
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        if status == 429:
+            return "rate_limit"
+        if status in (400, 404, 422):
+            return "param_error"
+        return "network_error"
+    return "unknown"
+
+
 def dedup_evidence(evidence: List[Evidence]) -> List[Evidence]:
     """Remove duplicate evidence by URL first, then by content hash."""
     seen_urls = set()
@@ -77,7 +100,11 @@ class Retriever:
                 if self.trace:
                     self.trace.add_event(
                         EventType.ERROR,
-                        payload={"query": query, "error": response.error},
+                        payload={
+                            "query": query,
+                            "error": response.error,
+                            "error_type": "empty_results",
+                        },
                     )
                 return []
             evidence = dedup_evidence(
@@ -94,7 +121,11 @@ class Retriever:
             if self.trace:
                 self.trace.add_event(
                     EventType.ERROR,
-                    payload={"query": query, "error": str(e)},
+                    payload={
+                        "query": query,
+                        "error": str(e),
+                        "error_type": classify_error(e),
+                    },
                 )
             return []
         finally:
@@ -118,6 +149,7 @@ class LocalRetriever:
         embedding_model: str = DEFAULT_EMBEDDING_MODEL,
         reranker: Optional[Any] = None,
         mode: str = "hybrid",
+        max_chunks_per_doc: int = 2,
     ):
         if mode not in ("hybrid", "bm25", "vector"):
             raise ValueError(f"Unknown retrieval mode: {mode}")
@@ -125,6 +157,7 @@ class LocalRetriever:
         self.embedding_model = embedding_model
         self.reranker = reranker
         self.mode = mode
+        self.max_chunks_per_doc = max_chunks_per_doc
         self._bm25 = BM25Index()
         self._vector = VectorIndex(model=embedding_model)
         self._chunks: Dict[str, Chunk] = {}
@@ -174,12 +207,16 @@ class LocalRetriever:
 
         doc_filter = self._doc_filter(filters)
         evidence: List[Evidence] = []
+        chunks_per_doc: Dict[str, int] = {}
         for chunk_id, score in fused:
             chunk = self._chunks.get(chunk_id)
             if chunk is None:
                 continue
             if doc_filter is not None and chunk.doc_id not in doc_filter:
                 continue
+            if chunks_per_doc.get(chunk.doc_id, 0) >= self.max_chunks_per_doc:
+                continue
+            chunks_per_doc[chunk.doc_id] = chunks_per_doc.get(chunk.doc_id, 0) + 1
             evidence.append(self._to_evidence(query, chunk, score))
             if len(evidence) >= top_k:
                 break

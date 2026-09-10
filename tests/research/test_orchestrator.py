@@ -151,6 +151,105 @@ class TestOrchestrator:
         assert retriever.queries == [task.question]
 
     @pytest.mark.asyncio
+    async def test_validator_retry_loop(self, tmp_path: Path, task, monkeypatch):
+        """Incomplete step triggers one refined-query retry, then completes."""
+        from app.research.verifier import ValidationResult
+
+        class FakeValidator:
+            def __init__(self):
+                self.seen = set()
+
+            async def validate_step(self, goal, evidence, question):
+                first_time = goal not in self.seen
+                self.seen.add(goal)
+                if first_time:
+                    return ValidationResult(
+                        step_complete=False,
+                        evidence_sufficiency=3.0,
+                        refined_query="refined query",
+                        reason="missing facts",
+                    )
+                return ValidationResult(
+                    step_complete=True, evidence_sufficiency=9.0, reason="covered"
+                )
+
+        monkeypatch.setattr(
+            orchestrator_module,
+            "call_llm",
+            FakeLLM([(PLAN_JSON, USAGE), (REPORT, USAGE)]),
+        )
+        retriever = FakeRetriever(evidence=[make_evidence("https://a.com")])
+        with TraceWriter(task.task_id, output_root=tmp_path) as trace:
+            orchestrator = ResearchOrchestrator(
+                task=task,
+                trace=trace,
+                retriever=retriever,
+                validator=FakeValidator(),
+                max_retries_per_step=2,
+            )
+            await orchestrator.run()
+
+        # each of the 2 steps: first attempt judged incomplete -> retried
+        assert retriever.queries == [
+            "nobel physics 2024 winner",
+            "refined query",
+            "nobel physics 2024 contribution",
+            "refined query",
+        ]
+        events = TraceWriter.load_trace(tmp_path / task.task_id / "trace.jsonl")
+        verify_events = [e for e in events if e.event_type == EventType.VERIFICATION]
+        metrics = [e for e in verify_events if "step_index" in e.payload]
+        assert len(metrics) == 2
+        assert metrics[0].payload["retries_used"] == 1
+        assert metrics[0].payload["step_complete"] is None  # last attempt not re-validated
+        assert metrics[0].payload["evidence_sufficiency"] == 3.0
+
+    @pytest.mark.asyncio
+    async def test_validator_retry_exhausted(self, tmp_path: Path, task, monkeypatch):
+        """Validator keeps asking for more; loop stops at max_retries."""
+        from app.research.verifier import ValidationResult
+
+        class NeverDoneValidator:
+            async def validate_step(self, goal, evidence, question):
+                return ValidationResult(
+                    step_complete=False,
+                    evidence_sufficiency=2.0,
+                    refined_query="another query",
+                    reason="still missing",
+                )
+
+        monkeypatch.setattr(
+            orchestrator_module,
+            "call_llm",
+            FakeLLM([(PLAN_JSON, USAGE), (REPORT, USAGE)]),
+        )
+        retriever = FakeRetriever(evidence=[])
+        with TraceWriter(task.task_id, output_root=tmp_path) as trace:
+            orchestrator = ResearchOrchestrator(
+                task=task,
+                trace=trace,
+                retriever=retriever,
+                validator=NeverDoneValidator(),
+                max_retries_per_step=2,
+            )
+            await orchestrator.run()
+
+        assert retriever.queries == [
+            "nobel physics 2024 winner",
+            "another query",
+            "nobel physics 2024 contribution",
+            "another query",
+        ]
+        events = TraceWriter.load_trace(tmp_path / task.task_id / "trace.jsonl")
+        metrics = [
+            e
+            for e in events
+            if e.event_type == EventType.VERIFICATION and "step_index" in e.payload
+        ]
+        assert metrics[0].payload["retries_used"] == 1
+        assert metrics[0].payload["step_complete"] is None  # never completed
+
+    @pytest.mark.asyncio
     async def test_synthesis_failure_marks_failed(self, tmp_path: Path, task, monkeypatch):
         class FlakyLLM(FakeLLM):
             def __init__(self):

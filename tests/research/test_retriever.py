@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from app.research.models import EventType, Evidence
-from app.research.retriever import Retriever, dedup_evidence
+from app.research.retriever import Retriever, classify_error, dedup_evidence
 from app.research.trace import TraceWriter
 
 
@@ -40,6 +40,46 @@ class FakeWebSearch:
 
 def make_evidence(url, snippet="text"):
     return Evidence(url=url, snippet=snippet)
+
+
+class TestClassifyError:
+    def test_rate_limit_by_class_name(self):
+        class RatelimitException(Exception):
+            pass
+
+        assert classify_error(RatelimitException("202 Ratelimit")) == "rate_limit"
+
+    def test_timeout_is_network(self):
+        import requests
+
+        assert classify_error(requests.exceptions.Timeout("t")) == "network_error"
+
+    def test_http_429(self):
+        import requests
+
+        exc = requests.exceptions.HTTPError("429")
+        exc.response = type("R", (), {"status_code": 429})()
+        assert classify_error(exc) == "rate_limit"
+
+    def test_http_404_param(self):
+        import requests
+
+        exc = requests.exceptions.HTTPError("404")
+        exc.response = type("R", (), {"status_code": 404})()
+        assert classify_error(exc) == "param_error"
+
+    def test_unknown(self):
+        assert classify_error(RuntimeError("weird")) == "unknown"
+
+    @pytest.mark.asyncio
+    async def test_error_event_carries_type(self, tmp_path: Path):
+        fake = FakeWebSearch(exc=RuntimeError("boom"))
+        with TraceWriter("t", output_root=tmp_path) as trace:
+            retriever = Retriever(trace=trace, web_search=fake)
+            await retriever.search("q")
+        events = TraceWriter.load_trace(tmp_path / "t" / "trace.jsonl")
+        error = next(e for e in events if e.event_type == EventType.ERROR)
+        assert error.payload["error_type"] == "unknown"
 
 
 class TestDedup:
