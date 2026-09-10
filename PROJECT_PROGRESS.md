@@ -144,13 +144,41 @@
 
 ---
 
-## 下一步（已确认方向）
+## Phase 5：报告生成与事实核查（前半：Claim-Evidence 检查）✅
 
-**Phase 5 前半：Claim-Evidence 自动检查**（当前中断于此，用户已确认开始）
-1. 断言提取器：从报告 Key Findings 解析逐条 Claim（LLM 结构化提取，离线可跑）
-2. Claim-Evidence 检查器：引用存在性 + 引用是否**真正支持**断言（支持/矛盾/无关三分类）
-3. 回评 11+ 份存量报告，产出 `citation_correctness`、`unsupported_claim_rate` 指标，替换失真的旧覆盖率指标
-4. 之后：Phase 4 记忆系统 → Phase 6 系统评测（50-100 任务 + 3 项消融）
+### 新增模块
+- **claim_check.py**：`ReportAuditor` 两阶段审计
+  - 断言提取：LLM 从报告提取逐条事实断言 + 其引用的 `[E#]` 编号（接受 `{"claims": [...]}` 字典形式）
+  - 引用检查：LLM 四分类判断（supported / contradicted / irrelevant / unsupported），批量 8 条/次
+  - **自修复重试**：发现 LLM 偶尔产出非法 JSON（字符串内引号未转义）→ 解析失败时把错误反馈给模型重试一次（两阶段都有），修复后 19 份报告全部审计成功
+  - 未判定声明（unjudged）不计入正确率，保证指标诚实
+  - 产物：每任务 `audit.json`（断言+判定+指标），聚合 `data/research/claim_audit_results.json`
+  - CLI：`python -m app.research.claim_check --all | --task-id <id>`
+
+### 新指标（替换失真的旧覆盖率）
+- `citation_correctness` = supported / (supported+contradicted+irrelevant)
+- `unsupported_claim_rate` = 无引用断言 / 全部断言
+
+### 回评结果：基线 vs Validator（各 5 题，19 份报告全部审计）
+
+| 指标 | 基线 | +Validator |
+|---|---|---|
+| 断言总数 | 83 | 109 |
+| **引用正确率** | 0.889 | **0.966**（+7.7pp，达成计划 85% 目标） |
+| 无引用断言率 | 1.0% | 0.7% |
+
+**验证了 Phase 3 的判断**：旧"收集覆盖率"指标（validator 组 0.74 < 基线 1.0）确实是度量失真——在正确指标下 validator 组引用质量反而**更高**。收集更多证据 → 模型引用更精准，而不是"引不过来"。
+
+### 测试
+- 83 个单元测试全过（新增 claim_check 测试 5 个：指标计算、提取失败、unjudged 排除、非法引用、字典形式解析）
+
+---
+
+## 下一步（待确认方向）
+
+- Phase 4：记忆系统（摘要记忆/失败记忆/程序性记忆/上下文压缩）
+- Phase 6：系统评测（50-100 任务 + 3 项消融，引用正确率/无引用断言率已可用）
+- Phase 7：工程化（CLI 完善、Docker、README、简历材料）
 
 ---
 

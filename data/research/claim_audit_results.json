@@ -1,0 +1,211 @@
+[
+  {
+    "task_id": "task-023ce0576826",
+    "claim_count": 16,
+    "claims_with_citations": 16,
+    "supported": 15,
+    "contradicted": 0,
+    "irrelevant": 1,
+    "unsupported": 0,
+    "citation_correctness": 0.938,
+    "unsupported_claim_rate": 0.0
+  },
+  {
+    "task_id": "task-09df5524e643",
+    "claim_count": 18,
+    "claims_with_citations": 18,
+    "supported": 16,
+    "contradicted": 0,
+    "irrelevant": 2,
+    "unsupported": 0,
+    "citation_correctness": 0.889,
+    "unsupported_claim_rate": 0.0
+  },
+  {
+    "task_id": "task-19180bd230f5",
+    "claim_count": 16,
+    "claims_with_citations": 16,
+    "supported": 16,
+    "contradicted": 0,
+    "irrelevant": 0,
+    "unsupported": 0,
+    "citation_correctness": 1.0,
+    "unsupported_claim_rate": 0.0
+  },
+  {
+    "task_id": "task-2060f870cde6",
+    "claim_count": 10,
+    "claims_with_citations": 10,
+    "supported": 10,
+    "contradicted": 0,
+    "irrelevant": 0,
+    "unsupported": 0,
+    "citation_correctness": 1.0,
+    "unsupported_claim_rate": 0.0
+  },
+  {
+    "task_id": "task-3797d573e7ec",
+    "claim_count": 14,
+    "claims_with_citations": 14,
+    "supported": 12,
+    "contradicted": 0,
+    "irrelevant": 2,
+    "unsupported": 0,
+    "citation_correctness": 0.857,
+    "unsupported_claim_rate": 0.0
+  },
+  {
+    "task_id": "task-3859f178d0ec",
+    "claim_count": 12,
+    "claims_with_citations": 12,
+    "supported": 12,
+    "contradicted": 0,
+    "irrelevant": 0,
+    "unsupported": 0,
+    "citation_correctness": 1.0,
+    "unsupported_claim_rate": 0.0
+  },
+  {
+    "task_id": "task-45328548358a",
+    "claim_count": 7,
+    "claims_with_citations": 7,
+    "supported": 7,
+    "contradicted": 0,
+    "irrelevant": 0,
+    "unsupported": 0,
+    "citation_correctness": 1.0,
+    "unsupported_claim_rate": 0.0
+  },
+  {
+    "task_id": "task-6a05d6ebc59b",
+    "claim_count": 5,
+    "claims_with_citations": 5,
+    "supported": 4,
+    "contradicted": 0,
+    "irrelevant": 1,
+    "unsupported": 0,
+    "citation_correctness": 0.8,
+    "unsupported_claim_rate": 0.0
+  },
+  {
+    "task_id": "task-7671677adbbe",
+    "claim_count": 28,
+    "claims_with_citations": 27,
+    "supported": 26,
+    "contradicted": 0,
+    "irrelevant": 1,
+    "unsupported": 1,
+    "citation_correctness": 0.963,
+    "unsupported_claim_rate": 0.036
+  },
+  {
+    "task_id": "task-85d279d3f0ce",
+    "claim_count": 21,
+    "claims_with_citations": 21,
+    "supported": 17,
+    "contradicted": 1,
+    "irrelevant": 3,
+    "unsupported": 0,
+    "citation_correctness": 0.81,
+    "unsupported_claim_rate": 0.0
+  },
+  {
+    "task_id": "task-934409e3008a",
+    "claim_count": 12,
+    "claims_with_citations": 12,
+    "supported": 12,
+    "contradicted": 0,
+    "irrelevant": 0,
+    "unsupported": 0,
+    "citation_correctness": 1.0,
+    "unsupported_claim_rate": 0.0
+  },
+  {
+    "task_id": "task-a41691d46261",
+    "claim_count": 15,
+    "claims_with_citations": 13,
+    "supported": 13,
+    "contradicted": 0,
+    "irrelevant": 0,
+    "unsupported": 2,
+    "citation_correctness": 1.0,
+    "unsupported_claim_rate": 0.133
+  },
+  {
+    "task_id": "task-aa5a96a0f3f0",
+    "claim_count": 21,
+    "claims_with_citations": 20,
+    "supported": 20,
+    "contradicted": 0,
+    "irrelevant": 0,
+    "unsupported": 1,
+    "citation_correctness": 1.0,
+    "unsupported_claim_rate": 0.048
+  },
+  {
+    "task_id": "task-af2a2e7b786a",
+    "claim_count": 12,
+    "claims_with_citations": 12,
+    "supported": 11,
+    "contradicted": 0,
+    "irrelevant": 1,
+    "unsupported": 0,
+    "citation_correctness": 0.917,
+    "unsupported_claim_rate": 0.0
+  },
+  {
+    "task_id": "task-b9cc16afc903",
+    "claim_count": 20,
+    "claims_with_citations": 18,
+    "supported": 18,
+    "contradicted": 0,
+    "irrelevant": 0,
+    "unsupported": 2,
+    "citation_correctness": 1.0,
+    "unsupported_claim_rate": 0.1
+  },
+  {
+    "task_id": "task-ba8b6f948e60",
+    "claim_count": 16,
+    "claims_with_citations": 16,
+    "supported": 16,
+    "contradicted": 0,
+    "irrelevant": 0,
+    "unsupported": 0,
+    "citation_correctness": 1.0,
+    "unsupported_claim_rate": 0.0
+  },
+  {
+    "task_id": "task-d6f7c737f484",
+    "claim_count": 19,
+    "claims_with_citations": 15,
+    "supported": 15,
+    "contradicted": 0,
+    "irrelevant": 0,
+    "unsupported": 4,
+    "citation_correctness": 1.0,
+    "unsupported_claim_rate": 0.211
+  },
+  {
+    "task_id": "task-e3d06bb3b1f8",
+    "claim_count": 9,
+    "claims_with_citations": 9,
+    "supported": 8,
+    "contradicted": 0,
+    "irrelevant": 1,
+    "unsupported": 0,
+    "citation_correctness": 0.889,
+    "unsupported_claim_rate": 0.0
+  },
+  {
+    "task_id": "task-f3099b91f225",
+    "claim_count": 41,
+    "claims_with_citations": 41,
+    "supported": 39,
+    "contradicted": 0,
+    "irrelevant": 2,
+    "unsupported": 0,
+    "citation_correctness": 0.951,
+    "unsupported_claim_rate": 0.0
+  }
+]
