@@ -174,10 +174,20 @@
 
 ---
 
+## Phase 6 前半：评测集扩展 ✅（任务集 5→23）
+
+- `data/research/tasks.jsonl` 扩到 **23 题**（fact_lookup 5 / comparison 5 / time_constraint 4 / multi_hop 5 / conflicting_sources 4）
+- 每题含完整 gold 标注：`gold_answer`（标准答案）、`key_facts`（关键事实清单）、`acceptable_sources`（可接受来源）、`stop_conditions`（停止条件）——按计划 Phase 6 的标注规范
+- 新题覆盖：GPT-5/Claude 4 发布时间、Mistral AI/波士顿动力公司事实、DeepSeek-R1 vs o1、RAG vs 长上下文、LoRA vs 全参微调、OpenAI vs Anthropic 安全策略、2025 H1 模型清单（含 GPT-5 时间窗口排除测试）、OpenAI 2023-2024 人事风波、2024 融资事件、Sutton&Barto 教材、Shazeer→Transformer、Sakana AI、DeepMind→诺贝尔化学奖、Scaling Law 之争、开源管制之争、AI 意识之争
+- 时效性事实（GPT-5 发布时间、Claude 4 版本、融资额）均经网络搜索验证后写入
+- 题目设计要点：t14 特意埋了"GPT-5 是 8 月发布"的**时间窗口排除测试**，可检验 Agent 的时间约束能力
+
+---
+
 ## 下一步（待确认方向）
 
-- Phase 4：记忆系统（摘要记忆/失败记忆/程序性记忆/上下文压缩）
-- Phase 6：系统评测（50-100 任务 + 3 项消融，引用正确率/无引用断言率已可用）
+- Phase 4：记忆系统（程序性记忆 lessons.jsonl / 上下文压缩——现已有 23 题任务集可支撑跨任务证据）
+- Phase 6 后半：23 题全量评测（成功判定需 gold 对比器）+ 完整消融表
 - Phase 7：工程化（CLI 完善、Docker、README、简历材料）
 
 ---
