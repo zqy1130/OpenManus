@@ -1,0 +1,116 @@
+{
+  "baseline": [
+    {
+      "task_id": "task-e3d06bb3b1f8",
+      "sub_questions": 3,
+      "evidence": 8,
+      "coverage": 1.0,
+      "duration_s": 84.6,
+      "tokens_in": 1432,
+      "tokens_out": 4162,
+      "errors": 1,
+      "retries": 0
+    },
+    {
+      "task_id": "task-09df5524e643",
+      "sub_questions": 4,
+      "evidence": 19,
+      "coverage": 1.0,
+      "duration_s": 117.1,
+      "tokens_in": 2731,
+      "tokens_out": 6311,
+      "errors": 0,
+      "retries": 0
+    },
+    {
+      "task_id": "task-aa5a96a0f3f0",
+      "sub_questions": 4,
+      "evidence": 20,
+      "coverage": 1.0,
+      "duration_s": 107.4,
+      "tokens_in": 3207,
+      "tokens_out": 9096,
+      "errors": 0,
+      "retries": 0
+    },
+    {
+      "task_id": "task-85d279d3f0ce",
+      "sub_questions": 4,
+      "evidence": 11,
+      "coverage": 1.0,
+      "duration_s": 124.6,
+      "tokens_in": 1672,
+      "tokens_out": 5886,
+      "errors": 1,
+      "retries": 0
+    },
+    {
+      "task_id": "task-3797d573e7ec",
+      "sub_questions": 4,
+      "evidence": 12,
+      "coverage": 1.0,
+      "duration_s": 112.6,
+      "tokens_in": 2034,
+      "tokens_out": 5766,
+      "errors": 1,
+      "retries": 0
+    }
+  ],
+  "validator": [
+    {
+      "task_id": "task-934409e3008a",
+      "sub_questions": 3,
+      "evidence": 12,
+      "coverage": 1.0,
+      "duration_s": 120.1,
+      "tokens_in": 4275,
+      "tokens_out": 7079,
+      "errors": 0,
+      "retries": 0
+    },
+    {
+      "task_id": "task-af2a2e7b786a",
+      "sub_questions": 4,
+      "evidence": 29,
+      "coverage": 0.586,
+      "duration_s": 213.0,
+      "tokens_in": 8183,
+      "tokens_out": 11025,
+      "errors": 0,
+      "retries": 4
+    },
+    {
+      "task_id": "task-f3099b91f225",
+      "sub_questions": 4,
+      "evidence": 44,
+      "coverage": 0.591,
+      "duration_s": 291.1,
+      "tokens_in": 16115,
+      "tokens_out": 16404,
+      "errors": 0,
+      "retries": 7
+    },
+    {
+      "task_id": "task-19180bd230f5",
+      "sub_questions": 4,
+      "evidence": 37,
+      "coverage": 0.514,
+      "duration_s": 187.3,
+      "tokens_in": 9757,
+      "tokens_out": 10073,
+      "errors": 0,
+      "retries": 4
+    },
+    {
+      "task_id": "task-7671677adbbe",
+      "sub_questions": 4,
+      "evidence": 29,
+      "coverage": 1.0,
+      "duration_s": 203.3,
+      "tokens_in": 10976,
+      "tokens_out": 11981,
+      "errors": 0,
+      "retries": 5
+    }
+  ]
+}
