@@ -1,6 +1,7 @@
 import math
 from typing import Dict, List, Optional, Union
 
+import httpx
 import tiktoken
 from openai import (
     APIError,
@@ -213,16 +214,28 @@ class LLM:
                 # If the model is not in tiktoken's presets, use cl100k_base as default
                 self.tokenizer = tiktoken.get_encoding("cl100k_base")
 
+            # Bind the local socket to IPv4: on networks with broken IPv6
+            # routing (common with China ISPs), httpx tries IPv6 first and
+            # fails with APIConnectionError instead of falling back to IPv4.
+            _ipv4_http_client = httpx.AsyncClient(
+                transport=httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+            )
+
             if self.api_type == "azure":
                 self.client = AsyncAzureOpenAI(
                     base_url=self.base_url,
                     api_key=self.api_key,
                     api_version=self.api_version,
+                    http_client=_ipv4_http_client,
                 )
             elif self.api_type == "aws":
                 self.client = BedrockClient()
             else:
-                self.client = AsyncOpenAI(api_key=self.api_key, base_url=self.base_url)
+                self.client = AsyncOpenAI(
+                    api_key=self.api_key,
+                    base_url=self.base_url,
+                    http_client=_ipv4_http_client,
+                )
 
             self.token_counter = TokenCounter(self.tokenizer)
 
