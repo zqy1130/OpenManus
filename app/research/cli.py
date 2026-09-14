@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 
+from app.research.memory import LessonStore
 from app.research.models import ResearchTask
 from app.research.orchestrator import ResearchOrchestrator
 from app.research.retriever import Retriever
@@ -15,6 +16,8 @@ async def run_research(
     top_k: int,
     max_sub_questions: int,
     use_validator: bool = True,
+    use_memory: bool = True,
+    summarize_evidence: bool = True,
 ) -> None:
     task = ResearchTask(question=question)
     with TraceWriter(task.task_id) as trace:
@@ -25,6 +28,9 @@ async def run_research(
             top_k=top_k,
             max_sub_questions=max_sub_questions,
             validator=Validator(trace=trace) if use_validator else None,
+            lesson_store=LessonStore() if use_memory else None,
+            use_lessons=use_memory,
+            summarize_evidence=summarize_evidence,
         )
         summary = await orchestrator.run()
     print(f"完成！报告: outputs/research/{task.task_id}/report.md")
@@ -47,6 +53,16 @@ def main() -> None:
         action="store_true",
         help="Disable step validation (for ablation runs)",
     )
+    parser.add_argument(
+        "--no-memory",
+        action="store_true",
+        help="Disable procedural memory (lessons) for ablation runs",
+    )
+    parser.add_argument(
+        "--no-summarize",
+        action="store_true",
+        help="Disable evidence summarization (for ablation runs)",
+    )
     args = parser.parse_args()
     asyncio.run(
         run_research(
@@ -54,6 +70,8 @@ def main() -> None:
             args.top_k,
             args.max_sub_questions,
             use_validator=not args.no_validator,
+            use_memory=not args.no_memory,
+            summarize_evidence=not args.no_summarize,
         )
     )
 

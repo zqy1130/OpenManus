@@ -250,6 +250,133 @@ class TestOrchestrator:
         assert metrics[0].payload["step_complete"] is None  # never completed
 
     @pytest.mark.asyncio
+    async def test_lessons_injected_into_plan(self, tmp_path: Path, task, monkeypatch):
+        """Plan prompt includes retrieved lessons when a store is wired."""
+        from app.research.memory import Lesson, LessonStore
+
+        store = LessonStore(path=tmp_path / "lessons.jsonl")
+        store.add(
+            [
+                Lesson(
+                    task_id="prev",
+                    strategy="search nobel prize winner announcements with the year number",
+                    outcome="success",
+                )
+            ]
+        )
+        captured = {}
+
+        async def spy(messages, max_tokens=4096, temperature=0.0):
+            captured["system"] = messages[0]["content"]
+            captured["user"] = messages[1]["content"]
+            return PLAN_JSON, USAGE
+
+        monkeypatch.setattr(orchestrator_module, "call_llm", spy)
+        with TraceWriter(task.task_id, output_root=tmp_path) as trace:
+            orchestrator = ResearchOrchestrator(
+                task=task,
+                trace=trace,
+                retriever=FakeRetriever(),
+                lesson_store=store,
+                use_lessons=True,
+            )
+            await orchestrator._plan()
+
+        assert "nobel prize" in captured["system"]
+        assert captured["user"] == task.question
+
+    @pytest.mark.asyncio
+    async def test_lessons_extracted_after_run(self, tmp_path: Path, task, monkeypatch):
+        """A successful run distills lessons into the store."""
+        from app.research.memory import LessonStore
+
+        store = LessonStore(path=tmp_path / "lessons.jsonl")
+        lesson_response = json.dumps(
+            [
+                {"strategy": "search official pages first", "outcome": "success"},
+                {"strategy": "avoid vague queries", "outcome": "failure"},
+            ]
+        )
+        monkeypatch.setattr(
+            orchestrator_module,
+            "call_llm",
+            FakeLLM([(PLAN_JSON, USAGE), (REPORT, USAGE), (lesson_response, USAGE)]),
+        )
+        with TraceWriter(task.task_id, output_root=tmp_path) as trace:
+            orchestrator = ResearchOrchestrator(
+                task=task,
+                trace=trace,
+                retriever=FakeRetriever(evidence=[make_evidence("https://a.com")]),
+                lesson_store=store,
+            )
+            await orchestrator.run()
+
+        lessons = store.load()
+        assert len(lessons) == 2
+        assert lessons[0].task_id == task.task_id
+        assert lessons[1].outcome == "failure"
+
+    @pytest.mark.asyncio
+    async def test_evidence_summarized_above_threshold(
+        self, tmp_path: Path, task, monkeypatch
+    ):
+        """Synthesis context uses one-line summaries when evidence is long."""
+        many = [make_evidence(f"https://a.com/{i}") for i in range(20)]
+        summary_response = json.dumps(
+            {f"E{i}": f"key point {i}" for i in range(1, 21)}
+        )
+        captured = {}
+
+        async def spy(messages, max_tokens=4096, temperature=0.0):
+            system = messages[0]["content"]
+            if "research planner" in system:
+                return PLAN_JSON, USAGE
+            if "compressing evidence" in system:
+                return summary_response, USAGE
+            captured["synthesis_user"] = messages[1]["content"]
+            return REPORT, USAGE
+
+        monkeypatch.setattr(orchestrator_module, "call_llm", spy)
+        with TraceWriter(task.task_id, output_root=tmp_path) as trace:
+            orchestrator = ResearchOrchestrator(
+                task=task,
+                trace=trace,
+                retriever=FakeRetriever(evidence=many),
+                summarize_evidence=True,
+                evidence_summary_threshold=10,
+            )
+            await orchestrator.run()
+
+        assert "key point 1" in captured["synthesis_user"]
+        assert "[E1]" in captured["synthesis_user"]
+
+    @pytest.mark.asyncio
+    async def test_no_summary_below_threshold(
+        self, tmp_path: Path, task, monkeypatch
+    ):
+        """Short evidence sets skip the summary stage entirely."""
+        systems = []
+
+        async def spy(messages, max_tokens=4096, temperature=0.0):
+            systems.append(messages[0]["content"])
+            if "research planner" in messages[0]["content"]:
+                return PLAN_JSON, USAGE
+            return REPORT, USAGE
+
+        monkeypatch.setattr(orchestrator_module, "call_llm", spy)
+        with TraceWriter(task.task_id, output_root=tmp_path) as trace:
+            orchestrator = ResearchOrchestrator(
+                task=task,
+                trace=trace,
+                retriever=FakeRetriever(evidence=[make_evidence("https://a.com")]),
+                summarize_evidence=True,
+                evidence_summary_threshold=10,
+            )
+            await orchestrator.run()
+
+        assert not any("compressing evidence" in s for s in systems)
+
+    @pytest.mark.asyncio
     async def test_synthesis_failure_marks_failed(self, tmp_path: Path, task, monkeypatch):
         class FlakyLLM(FakeLLM):
             def __init__(self):

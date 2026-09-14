@@ -1,0 +1,18 @@
+{
+  "arm_a_no_memory": {
+    "avg_correctness": 0.969,
+    "total_claims": 89,
+    "total_evidence": 132,
+    "total_duration": 817.0,
+    "total_in": 41820,
+    "total_out": 60439
+  },
+  "arm_b_memory": {
+    "avg_correctness": 0.982,
+    "total_claims": 93,
+    "total_evidence": 176,
+    "total_duration": 1714.0,
+    "total_in": 65252,
+    "total_out": 138342
+  }
+}
