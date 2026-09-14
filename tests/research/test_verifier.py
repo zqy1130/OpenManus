@@ -19,7 +19,7 @@ class FakeLLM:
     def __init__(self, response):
         self.response = response
 
-    async def __call__(self, messages, max_tokens=4096, temperature=0.0):
+    async def __call__(self, messages, max_tokens=4096, temperature=0.0, model=None):
         return self.response, USAGE
 
 

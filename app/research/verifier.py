@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from app.research.llm import call_llm, extract_json
+from app.research.llm import call_llm, extract_json, resolve_model
 from app.research.models import EventType, Evidence
 from app.research.trace import TraceWriter
 
@@ -34,9 +34,15 @@ class ValidationResult(BaseModel):
 class Validator:
     """Judges step completion and proposes follow-up queries when needed."""
 
-    def __init__(self, trace: Optional[TraceWriter] = None, max_chars: int = 300):
+    def __init__(
+        self,
+        trace: Optional[TraceWriter] = None,
+        max_chars: int = 300,
+        route_models: bool = False,
+    ):
         self.trace = trace
         self.max_chars = max_chars
+        self.route_models = route_models
 
     async def validate_step(
         self, step_goal: str, evidence: List[Evidence], question: str
@@ -56,6 +62,7 @@ class Validator:
                 {"role": "user", "content": user_content},
             ],
             max_tokens=1000,
+            model=resolve_model("validation", self.route_models),
         )
         result = self._parse_result(content)
         if self.trace:

@@ -39,7 +39,7 @@ class FakeLLM:
         self.responses = list(responses)
         self.calls = []
 
-    async def __call__(self, messages, max_tokens=4096, temperature=0.0):
+    async def __call__(self, messages, max_tokens=4096, temperature=0.0, model=None):
         self.calls.append(messages)
         return self.responses.pop(0)
 
@@ -266,7 +266,7 @@ class TestOrchestrator:
         )
         captured = {}
 
-        async def spy(messages, max_tokens=4096, temperature=0.0):
+        async def spy(messages, max_tokens=4096, temperature=0.0, model=None):
             captured["system"] = messages[0]["content"]
             captured["user"] = messages[1]["content"]
             return PLAN_JSON, USAGE
@@ -327,7 +327,7 @@ class TestOrchestrator:
         )
         captured = {}
 
-        async def spy(messages, max_tokens=4096, temperature=0.0):
+        async def spy(messages, max_tokens=4096, temperature=0.0, model=None):
             system = messages[0]["content"]
             if "research planner" in system:
                 return PLAN_JSON, USAGE
@@ -357,7 +357,7 @@ class TestOrchestrator:
         """Short evidence sets skip the summary stage entirely."""
         systems = []
 
-        async def spy(messages, max_tokens=4096, temperature=0.0):
+        async def spy(messages, max_tokens=4096, temperature=0.0, model=None):
             systems.append(messages[0]["content"])
             if "research planner" in messages[0]["content"]:
                 return PLAN_JSON, USAGE
@@ -382,7 +382,7 @@ class TestOrchestrator:
             def __init__(self):
                 super().__init__([(PLAN_JSON, USAGE)])
 
-            async def __call__(self, messages, max_tokens=4096, temperature=0.0):
+            async def __call__(self, messages, max_tokens=4096, temperature=0.0, model=None):
                 if len(self.calls) >= 1:
                     raise RuntimeError("llm down")
                 return await super().__call__(messages, max_tokens, temperature)

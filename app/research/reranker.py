@@ -9,7 +9,7 @@ data, so page content cannot steer the reranking instructions.
 import json
 from typing import Any, List, Optional
 
-from app.research.llm import call_llm, extract_json
+from app.research.llm import call_llm, extract_json, resolve_model
 from app.research.models import EventType, Evidence
 from app.research.trace import TraceWriter
 
@@ -24,9 +24,15 @@ Rules:
 class LLMReranker:
     """Pointwise LLM reranker: scores candidates 0-10 and re-sorts them."""
 
-    def __init__(self, trace: Optional[TraceWriter] = None, max_chars: int = 300):
+    def __init__(
+        self,
+        trace: Optional[TraceWriter] = None,
+        max_chars: int = 300,
+        route_models: bool = False,
+    ):
         self.trace = trace
         self.max_chars = max_chars
+        self.route_models = route_models
 
     async def rerank(
         self, query: str, candidates: List[Evidence], top_k: Optional[int] = None
@@ -45,6 +51,7 @@ class LLMReranker:
                 {"role": "user", "content": user_content},
             ],
             max_tokens=2000,
+            model=resolve_model("rerank", self.route_models),
         )
         if self.trace:
             self.trace.add_event(

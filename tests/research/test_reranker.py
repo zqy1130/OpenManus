@@ -17,7 +17,7 @@ class FakeLLM:
     def __init__(self, response):
         self.response = response
 
-    async def __call__(self, messages, max_tokens=4096, temperature=0.0):
+    async def __call__(self, messages, max_tokens=4096, temperature=0.0, model=None):
         return self.response, USAGE
 
 
@@ -87,7 +87,7 @@ class TestRerank:
     async def test_untrusted_data_framing(self, monkeypatch):
         captured = {}
 
-        async def spy(messages, max_tokens=4096, temperature=0.0):
+        async def spy(messages, max_tokens=4096, temperature=0.0, model=None):
             captured["system"] = messages[0]["content"]
             captured["user"] = messages[1]["content"]
             return json.dumps([{"id": 1, "score": 5, "reason": ""}]), USAGE

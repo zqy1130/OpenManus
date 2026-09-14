@@ -20,7 +20,7 @@ class FakeLLM:
         self.responses = list(responses)
         self.calls = []
 
-    async def __call__(self, messages, max_tokens=4096, temperature=0.0):
+    async def __call__(self, messages, max_tokens=4096, temperature=0.0, model=None):
         self.calls.append(messages)
         return self.responses.pop(0)
 
@@ -147,7 +147,7 @@ class TestAuditTask:
         )
         captured = {}
 
-        async def spy(messages, max_tokens=4096, temperature=0.0):
+        async def spy(messages, max_tokens=4096, temperature=0.0, model=None):
             if "claim extractor" in messages[0]["content"]:
                 return extract, USAGE
             captured["user"] = messages[1]["content"]

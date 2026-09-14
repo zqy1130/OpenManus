@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from app.research.llm import call_llm, extract_json
+from app.research.llm import call_llm, extract_json, resolve_model
 from app.research.models import EventType
 from app.research.trace import TraceWriter
 
@@ -58,9 +58,15 @@ class ClaimCheckResult(BaseModel):
 class ReportAuditor:
     """Audits one task's report against its evidence list."""
 
-    def __init__(self, trace: Optional[TraceWriter] = None, max_chars: int = 300):
+    def __init__(
+        self,
+        trace: Optional[TraceWriter] = None,
+        max_chars: int = 300,
+        route_models: bool = False,
+    ):
         self.trace = trace
         self.max_chars = max_chars
+        self.route_models = route_models
 
     async def audit_task(self, task_dir: Path) -> Dict[str, Any]:
         report = (task_dir / "report.md").read_text(encoding="utf-8")
@@ -121,7 +127,11 @@ class ReportAuditor:
             {"role": "user", "content": report[:24000]},
         ]
         for attempt in range(2):
-            content, usage = await call_llm(messages, max_tokens=4000)
+            content, usage = await call_llm(
+                messages,
+                max_tokens=4000,
+                model=resolve_model("claim_extract", self.route_models),
+            )
             if self.trace:
                 self.trace.add_event(
                     EventType.VERIFICATION,
@@ -180,7 +190,11 @@ class ReportAuditor:
             ]
             parsed: Dict[int, ClaimCheckResult] = {}
             for attempt in range(2):
-                content, usage = await call_llm(messages, max_tokens=3000)
+                content, usage = await call_llm(
+                    messages,
+                    max_tokens=3000,
+                    model=resolve_model("claim_check", self.route_models),
+                )
                 if self.trace:
                     self.trace.add_event(
                         EventType.VERIFICATION,

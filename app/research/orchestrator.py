@@ -6,7 +6,7 @@ import re
 import time
 from typing import Any, Dict, List, Optional
 
-from app.research.llm import call_llm, extract_json
+from app.research.llm import call_llm, extract_json, resolve_model
 from app.research.memory import Lesson, LessonStore
 from app.research.models import (
     EventType,
@@ -76,6 +76,7 @@ class ResearchOrchestrator:
         use_lessons: bool = True,
         summarize_evidence: bool = True,
         evidence_summary_threshold: int = 15,
+        route_models: bool = False,
     ):
         self.task = task
         self.trace = trace
@@ -92,6 +93,7 @@ class ResearchOrchestrator:
         self.use_lessons = use_lessons
         self.summarize_evidence = summarize_evidence
         self.evidence_summary_threshold = evidence_summary_threshold
+        self.route_models = route_models
 
     async def run(self) -> Dict[str, Any]:
         """Execute the pipeline and return a summary dict."""
@@ -163,6 +165,7 @@ class ResearchOrchestrator:
                     {"role": "user", "content": self.task.question},
                 ],
                 max_tokens=2000,
+                model=resolve_model("planning", self.route_models),
             )
             self.trace.add_event(
                 EventType.PLANNING, payload={"raw": content}, usage=usage
@@ -284,6 +287,7 @@ class ResearchOrchestrator:
                     },
                 ],
                 max_tokens=6000,
+                model=resolve_model("synthesis", self.route_models),
             )
             self.trace.add_event(
                 EventType.SYNTHESIS,
@@ -314,6 +318,7 @@ class ResearchOrchestrator:
                     {"role": "user", "content": "\n\n".join(lines)},
                 ],
                 max_tokens=2000,
+                model=resolve_model("evidence_summary", self.route_models),
             )
             self.trace.add_event(
                 EventType.SYSTEM,
@@ -352,6 +357,7 @@ class ResearchOrchestrator:
                 {"role": "user", "content": "\n".join(summary_lines)},
             ],
             max_tokens=1000,
+            model=resolve_model("lesson_extract", self.route_models),
         )
         self.trace.add_event(
             EventType.SYSTEM,

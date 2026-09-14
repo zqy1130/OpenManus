@@ -9,6 +9,26 @@ from tenacity import retry, stop_after_attempt, wait_random_exponential
 from app.llm import LLM
 from app.research.models import LLMUsage
 
+# Model routing: cheap models for mechanical stages (validation,
+# summarization, lesson extraction, judging), strong models for the
+# stages that shape the research quality (planning, synthesis).
+ROUTES = {
+    "planning": "qwen3.7-max",
+    "synthesis": "qwen3.7-max",
+    "validation": "qwen-plus",
+    "evidence_summary": "qwen-plus",
+    "lesson_extract": "qwen-plus",
+    "claim_extract": "qwen-plus",
+    "claim_check": "qwen-plus",
+    "rerank": "qwen-plus",
+    "success_judge": "qwen-plus",
+}
+
+
+def resolve_model(stage: str, route_models: bool) -> Optional[str]:
+    """Return the routed model for a stage, or None for the default."""
+    return ROUTES.get(stage) if route_models else None
+
 
 @retry(
     wait=wait_random_exponential(min=2, max=30),
@@ -18,12 +38,14 @@ async def call_llm(
     messages: List[dict],
     max_tokens: int = 4096,
     temperature: float = 0.0,
+    model: Optional[str] = None,
 ) -> Tuple[str, LLMUsage]:
     """Non-streaming chat completion returning (content, usage)."""
     llm = LLM()
+    model_name = model or llm.model
     started = time.perf_counter()
     response = await llm.client.chat.completions.create(
-        model=llm.model,
+        model=model_name,
         messages=messages,
         max_tokens=max_tokens,
         temperature=temperature,
@@ -35,7 +57,7 @@ async def call_llm(
         raise ValueError("Empty or invalid response from LLM")
     content = response.choices[0].message.content or ""
     usage = LLMUsage(
-        model=llm.model,
+        model=model_name,
         input_tokens=response.usage.prompt_tokens if response.usage else 0,
         output_tokens=response.usage.completion_tokens if response.usage else 0,
         latency_ms=round(latency_ms, 1),
