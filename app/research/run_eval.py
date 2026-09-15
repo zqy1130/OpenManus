@@ -7,6 +7,11 @@ claim-audits each report and judges it against the gold answer. Writes
 aggregated metrics (task_success_rate, citation correctness, latency
 percentiles, tokens, failure classification) to JSON and prints a table.
 """
+import sys
+
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 
 import argparse
 import asyncio

@@ -8,6 +8,11 @@ the per-claim metrics that replace the raw collected-evidence coverage.
 
 Usage: python -m app.research.claim_check --all | --task-id <id>
 """
+import sys
+
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 
 import argparse
 import asyncio

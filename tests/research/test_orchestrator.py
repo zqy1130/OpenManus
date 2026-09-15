@@ -115,7 +115,7 @@ class TestOrchestrator:
             evidence=[make_evidence("https://a.com"), make_evidence("https://b.com")]
         )
         with TraceWriter(task.task_id, output_root=tmp_path) as trace:
-            orchestrator = ResearchOrchestrator(task=task, trace=trace, retriever=retriever)
+            orchestrator = ResearchOrchestrator(task=task, trace=trace, retriever=retriever, coverage_check=False)
             summary = await orchestrator.run()
 
         assert task.status == TaskStatus.COMPLETED
@@ -143,7 +143,7 @@ class TestOrchestrator:
         )
         retriever = FakeRetriever(evidence=[])
         with TraceWriter(task.task_id, output_root=tmp_path) as trace:
-            orchestrator = ResearchOrchestrator(task=task, trace=trace, retriever=retriever)
+            orchestrator = ResearchOrchestrator(task=task, trace=trace, retriever=retriever, coverage_check=False)
             summary = await orchestrator.run()
 
         assert task.status == TaskStatus.COMPLETED
@@ -186,6 +186,7 @@ class TestOrchestrator:
                 retriever=retriever,
                 validator=FakeValidator(),
                 max_retries_per_step=2,
+                coverage_check=False,
             )
             await orchestrator.run()
 
@@ -231,6 +232,7 @@ class TestOrchestrator:
                 retriever=retriever,
                 validator=NeverDoneValidator(),
                 max_retries_per_step=2,
+                coverage_check=False,
             )
             await orchestrator.run()
 
@@ -308,6 +310,7 @@ class TestOrchestrator:
                 trace=trace,
                 retriever=FakeRetriever(evidence=[make_evidence("https://a.com")]),
                 lesson_store=store,
+                coverage_check=False,
             )
             await orchestrator.run()
 
@@ -344,6 +347,7 @@ class TestOrchestrator:
                 retriever=FakeRetriever(evidence=many),
                 summarize_evidence=True,
                 evidence_summary_threshold=10,
+                coverage_check=False,
             )
             await orchestrator.run()
 
@@ -371,10 +375,80 @@ class TestOrchestrator:
                 retriever=FakeRetriever(evidence=[make_evidence("https://a.com")]),
                 summarize_evidence=True,
                 evidence_summary_threshold=10,
+                coverage_check=False,
             )
             await orchestrator.run()
 
         assert not any("compressing evidence" in s for s in systems)
+
+    @pytest.mark.asyncio
+    async def test_coverage_revision_when_goals_missing(self, tmp_path: Path, task, monkeypatch):
+        """Draft missing a goal -> coverage check flags it -> revised report used."""
+        draft = "draft missing facts"
+        revised = "revised report covering everything"
+        coverage_response = json.dumps(
+            [
+                {"goal_index": 0, "covered": True, "missing": ""},
+                {"goal_index": 1, "covered": False, "missing": "contribution details"},
+            ]
+        )
+        monkeypatch.setattr(
+            orchestrator_module,
+            "call_llm",
+            FakeLLM(
+                [
+                    (PLAN_JSON, USAGE),
+                    (draft, USAGE),
+                    (coverage_response, USAGE),
+                    (revised, USAGE),
+                ]
+            ),
+        )
+        with TraceWriter(task.task_id, output_root=tmp_path) as trace:
+            orchestrator = ResearchOrchestrator(
+                task=task,
+                trace=trace,
+                retriever=FakeRetriever(evidence=[make_evidence("https://a.com")]),
+                coverage_check=True,
+            )
+            await orchestrator.run()
+
+        report = (tmp_path / task.task_id / "report.md").read_text(encoding="utf-8")
+        assert report == revised
+        events = TraceWriter.load_trace(tmp_path / task.task_id / "trace.jsonl")
+        stages = [e.payload.get("stage") for e in events]
+        assert "coverage_check" in stages
+        assert "coverage_revision" in stages
+
+    @pytest.mark.asyncio
+    async def test_no_revision_when_all_goals_covered(self, tmp_path: Path, task, monkeypatch):
+        """All goals covered -> draft is kept, no revision call."""
+        draft = "complete draft"
+        coverage_response = json.dumps(
+            [
+                {"goal_index": 0, "covered": True, "missing": ""},
+                {"goal_index": 1, "covered": True, "missing": ""},
+            ]
+        )
+        fake = FakeLLM(
+            [
+                (PLAN_JSON, USAGE),
+                (draft, USAGE),
+                (coverage_response, USAGE),
+            ]
+        )
+        monkeypatch.setattr(orchestrator_module, "call_llm", fake)
+        with TraceWriter(task.task_id, output_root=tmp_path) as trace:
+            orchestrator = ResearchOrchestrator(
+                task=task,
+                trace=trace,
+                retriever=FakeRetriever(evidence=[make_evidence("https://a.com")]),
+                coverage_check=True,
+            )
+            await orchestrator.run()
+
+        report = (tmp_path / task.task_id / "report.md").read_text(encoding="utf-8")
+        assert report == draft
 
     @pytest.mark.asyncio
     async def test_synthesis_failure_marks_failed(self, tmp_path: Path, task, monkeypatch):
