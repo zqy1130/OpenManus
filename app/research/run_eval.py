@@ -23,6 +23,7 @@ from app.research.claim_check import ReportAuditor
 from app.research.memory import LessonStore
 from app.research.models import ResearchTask
 from app.research.orchestrator import ResearchOrchestrator
+from app.research.retrieval_cache import PlanCache, RetrievalCache
 from app.research.retriever import Retriever
 from app.research.success_judge import SuccessJudge
 from app.research.trace import TraceWriter
@@ -55,7 +56,7 @@ def classify_failure(events: List[Any]) -> str:
     return "unknown"
 
 
-async def run_one(task: dict, args) -> Dict[str, Any]:
+async def run_one(task: dict, args, cache=None, plan_cache=None) -> Dict[str, Any]:
     research_task = ResearchTask(
         question=task["question"],
         metadata={"category": task.get("category", ""), "task_id": task["id"]},
@@ -64,7 +65,12 @@ async def run_one(task: dict, args) -> Dict[str, Any]:
         orchestrator = ResearchOrchestrator(
             task=research_task,
             trace=trace,
-            retriever=Retriever(trace=trace, top_k=args.top_k),
+            retriever=Retriever(
+                trace=trace,
+                top_k=args.top_k,
+                cache=cache,
+                cache_mode=args.cache_mode,
+            ),
             top_k=args.top_k,
             validator=Validator(trace=trace, route_models=args.route_models)
             if not args.no_validator
@@ -73,6 +79,8 @@ async def run_one(task: dict, args) -> Dict[str, Any]:
             use_lessons=not args.no_memory,
             summarize_evidence=not args.no_summarize,
             route_models=args.route_models,
+            plan_cache=plan_cache,
+            plan_cache_mode=args.cache_mode,
         )
         try:
             await orchestrator.run()
@@ -174,14 +182,39 @@ async def main() -> None:
     parser.add_argument("--no-summarize", action="store_true")
     parser.add_argument("--no-validator", action="store_true")
     parser.add_argument("--arm", type=str, default="default", help="Label for results file")
+    parser.add_argument(
+        "--cache-mode",
+        type=str,
+        default="off",
+        choices=["off", "on", "read"],
+        help="Retrieval cache mode (read = strict replay, no network)",
+    )
+    parser.add_argument(
+        "--seed-cache",
+        action="store_true",
+        help="Seed the retrieval cache from previous runs before starting",
+    )
     args = parser.parse_args()
+
+    cache = None
+    plan_cache = None
+    if args.cache_mode != "off":
+        cache = RetrievalCache()
+        plan_cache = PlanCache()
+        if args.seed_cache:
+            added = cache.seed_from_outputs()
+            plans = plan_cache.seed_from_outputs()
+            print(
+                f"Cache seeded: {added} evidence items ({len(cache)} queries), "
+                f"{plans} plans"
+            )
 
     tasks = load_tasks(args.limit)
     print(f"Running {len(tasks)} tasks (arm={args.arm} route={args.route_models})")
     rows = []
     for i, task in enumerate(tasks, 1):
         print(f"[{i}/{len(tasks)}] {task['id']}: {task['question'][:50]}")
-        rows.append(await run_one(task, args))
+        rows.append(await run_one(task, args, cache=cache, plan_cache=plan_cache))
 
     summary = aggregate(rows)
     out = {"arm": args.arm, "route_models": args.route_models, "summary": summary, "tasks": rows}

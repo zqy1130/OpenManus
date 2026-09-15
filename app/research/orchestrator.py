@@ -85,6 +85,8 @@ class ResearchOrchestrator:
         evidence_summary_threshold: int = 15,
         route_models: bool = False,
         coverage_check: bool = True,
+        plan_cache: Optional[Any] = None,
+        plan_cache_mode: str = "off",
     ):
         self.task = task
         self.trace = trace
@@ -103,6 +105,8 @@ class ResearchOrchestrator:
         self.evidence_summary_threshold = evidence_summary_threshold
         self.route_models = route_models
         self.coverage_check = coverage_check
+        self.plan_cache = plan_cache
+        self.plan_cache_mode = plan_cache_mode
         self._plan_goals: List[str] = []
 
     async def run(self) -> Dict[str, Any]:
@@ -144,6 +148,31 @@ class ResearchOrchestrator:
         span = self.trace.start_span("planning")
         try:
             print("[planning] 生成研究计划...", flush=True)
+            if (
+                self.plan_cache is not None
+                and self.plan_cache_mode in ("on", "read")
+            ):
+                cached = self.plan_cache.get(self.task.question)
+                if cached is not None:
+                    self.trace.add_event(
+                        EventType.PLANNING,
+                        payload={"plan": cached, "cache": "hit"},
+                    )
+                    self._plan_goals = [item["goal"] for item in cached]
+                    print(
+                        f"[planning] 使用缓存计划（{len(cached)} 个子问题）",
+                        flush=True,
+                    )
+                    return cached
+                if self.plan_cache_mode == "read":
+                    self.trace.add_event(
+                        EventType.ERROR,
+                        payload={
+                            "stage": "planning",
+                            "error": "plan cache miss in read-only mode",
+                        },
+                    )
+                    raise RuntimeError("plan cache miss in read-only mode")
             system_prompt = PLAN_SYSTEM_PROMPT
             if self.use_lessons and self.lesson_store is not None:
                 lessons = self.lesson_store.search(
@@ -195,6 +224,8 @@ class ResearchOrchestrator:
                 ]
             self.trace.add_event(EventType.PLANNING, payload={"plan": plan})
             self._plan_goals = [item["goal"] for item in plan]
+            if self.plan_cache is not None and self.plan_cache_mode == "on":
+                self.plan_cache.put(self.task.question, plan)
             print(f"[planning] 拆分为 {len(plan)} 个子问题：", flush=True)
             for i, item in enumerate(plan, 1):
                 print(f"  {i}. {item['goal']}", flush=True)

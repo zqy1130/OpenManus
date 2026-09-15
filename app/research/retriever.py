@@ -66,10 +66,16 @@ class Retriever:
         trace: Optional[TraceWriter] = None,
         top_k: int = 5,
         web_search: Optional[Any] = None,
+        cache: Optional[Any] = None,
+        cache_mode: str = "off",
     ):
+        if cache_mode not in ("off", "on", "read"):
+            raise ValueError(f"Unknown cache mode: {cache_mode}")
         self.trace = trace
         self.top_k = top_k
         self._web_search = web_search if web_search is not None else WebSearch()
+        self.cache = cache
+        self.cache_mode = cache_mode
 
     async def search(
         self,
@@ -91,6 +97,35 @@ class Retriever:
                 EventType.RETRIEVAL,
                 payload={"query": query, "top_k": top_k, "fetch_content": fetch_content},
             )
+
+        if self.cache is not None and self.cache_mode in ("on", "read"):
+            cached = self.cache.get(query)
+            if cached is not None:
+                if self.trace:
+                    self.trace.add_event(
+                        EventType.RETRIEVAL,
+                        payload={
+                            "query": query,
+                            "evidence_count": len(cached),
+                            "cache": "hit",
+                        },
+                    )
+                if self.trace and span_id:
+                    self.trace.end_span(span_id)
+                return cached[:top_k]
+            if self.cache_mode == "read":
+                if self.trace:
+                    self.trace.add_event(
+                        EventType.ERROR,
+                        payload={
+                            "query": query,
+                            "error": "cache miss in read-only mode",
+                            "error_type": "cache_miss",
+                        },
+                    )
+                    self.trace.end_span(span_id)
+                return []
+
         try:
             response = await self._web_search.execute(
                 query=query, num_results=top_k, fetch_content=fetch_content
@@ -110,6 +145,8 @@ class Retriever:
             evidence = dedup_evidence(
                 [Evidence.from_search_result(r, query=query) for r in results]
             )
+            if self.cache is not None and self.cache_mode == "on":
+                self.cache.put(query, evidence)
             if self.trace:
                 self.trace.add_event(
                     EventType.RETRIEVAL,
