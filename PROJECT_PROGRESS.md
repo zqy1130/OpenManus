@@ -247,11 +247,22 @@ fact_lookup 0.79 > conflicting 0.62 > multi_hop 0.58 > time_constraint 0.51 > **
 4. **模型路由被账号权限卡住**：qwen-plus/turbo/max 均 403（百炼控制台需手动开通），待开通后补跑 routed 消融
 5. 下一步方法论改进：**评测期检索结果缓存**（固定每次评测的证据输入，消除搜索方差，才能做严格消融）
 
+### 模型路由消融（t01-t08 同题对比，qwen-plus 做机械阶段）
+
+| 指标 | 全强模型（v2） | 路由（+qwen-plus） |
+|---|---|---|
+| 平均 gold_score（强模型判定） | **0.639** | 0.481（-15.8pp） |
+| LLM 延迟 p50 | 13.9s | **4.2s**（-70%） |
+| 无引用断言率（强模型审计） | ~0.02 | 部分报告 0.36 |
+
+**结论**：qwen-plus 承担校验/摘要/覆盖检查后质量显著下降（弱模型的摘要丢失引用细节、校验误判），延迟收益不抵质量损失。**真省钱路由应只把弱模型用在低风险环节**（教训提取/重排），质量关键环节（校验/摘要/综合）保持强模型——留作后续调优方向，实验数据存 eval_results_routed8.json。
+
 ### 消融数据总览（全部存 data/research/）
 - ablation_validator.json：Validator +7.7pp 引用正确率、~2× 成本
 - retrieval_eval_results.json：混合检索 Recall@5 0.883（多样性修复后）
 - ablation_memory.json：记忆组正确率 0.982 vs 0.969、成本 +110%
-- eval_results_full23.json / full23v2.json：全量评测与失败明细
+- eval_results_full23.json / full23v2.json / routed8.json：全量评测与失败明细
+- 另发现：MaaS 账号欠费时 API 表现为 PermissionDeniedError（403），易误判为权限问题
 
 ---
 

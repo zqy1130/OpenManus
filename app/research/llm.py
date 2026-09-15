@@ -12,6 +12,8 @@ from app.research.models import LLMUsage
 # Model routing: cheap models for mechanical stages (validation,
 # summarization, lesson extraction, judging), strong models for the
 # stages that shape the research quality (planning, synthesis).
+# Note: qwen-plus requires the Model Studio account to be in good
+# standing (arrears surface as PermissionDeniedError).
 ROUTES = {
     "planning": "qwen3.7-max",
     "synthesis": "qwen3.7-max",
